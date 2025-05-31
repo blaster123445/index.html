@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Click the Dots Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      background-color: white;
+      color: black;
+    }
+
+    #home-page, #game-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #home-page {
+      text-align: center;
+      border: 2px solid black;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    #game-area {
+      position: relative;
+      width: 80vw;
+      height: 80vh;
+      background-color: black;
+      border: 2px solid white;
+      overflow: hidden;
+      display: none;
+      border-radius: 10px;
+      color: white;
+    }
+
+    .dot {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background-color: #FFF44F; /* lemon yellow */
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    #score-board, #level-board, #goal-board {
+      margin-top: 10px;
+      font-size: 24px;
+    }
+
+    #start-button, #retry-button {
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: yellow;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 20px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    #start-button:hover, #retry-button:hover {
+      background-color: gold;
+      transform: scale(1.05);
+    }
+
+    #next-level-button {
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ffa805;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 20px;
+      display: none;
+      color: black;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    #next-level-button:hover {
+      background-color: #e39504;
+      transform: scale(1.05);
+    }
+
+    /* Menu button styling - positioned top right */
+    #menu-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: brown;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 1002;
+    }
+
+    #menu-dropdown {
+      position: absolute;
+      top: 45px;
+      right: 10px;
+      background-color: #333;
+      border-radius: 5px;
+      display: none;
+      flex-direction: column;
+      min-width: 140px;
+      z-index: 1001;
+    }
+
+    #menu-dropdown button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 16px;
+      border-bottom: 1px solid #555;
+    }
+
+    #menu-dropdown button:last-child {
+      border-bottom: none;
+    }
+
+    #menu-dropdown button:hover {
+      background-color: #555;
+    }
+
+    /* Celebration animation (Original style) */
+    #celebration {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      background: rgba(255, 223, 0, 0.15);
+      color: #ffe066;
+      font-size: 48px;
+      font-weight: 800;
+      text-align: center;
+      overflow: hidden;
+      user-select: none;
+      box-shadow: 0 0 20px #ffd700;
+      max-width: 90%;
+      white-space: nowrap;
+      animation: sparkleFade 3s forwards;
+    }
+
+    @keyframes sparkleFade {
+      0% {opacity: 0;}
+      20% {opacity: 1;}
+      80% {opacity: 1;}
+      100% {opacity: 0;}
+    }
+  </style>
+</head>
+<body>
+  <div id="home-page">
+    <h1>Welcome to Click the Dots!</h1>
+    <button id="start-button">Start Game</button>
+  </div>
+
+  <div id="game-area">
+    <button id="menu-button">Menu ▼</button>
+    <div id="menu-dropdown">
+      <button id="retry-menu-button">Retry Level</button>
+      <button id="home-menu-button">Go to Home Page</button>
+      <button id="level1-menu-button">Go to Level 1</button>
+    </div>
+
+    <div id="level-board">Level: 1</div>
+    <div id="goal-board">Goal: 5 points</div>
+    <div id="score-board">Score: 0</div>
+    <button id="next-level-button">Next Level</button>
+    <button id="retry-button" style="display: none;">Retry</button>
+
+    <div id="celebration">Level Complete!</div>
+  </div>
+
+  <audio id="click-sound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="level-complete-sound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+  <audio id="game-start-sound" src="https://www.soundjay.com/button/button-4.wav"></audio>
+
+  <script>
+    const startButton = document.getElementById('start-button');
+    const nextLevelButton = document.getElementById('next-level-button');
+    const retryButton = document.getElementById('retry-button');
+    const homePage = document.getElementById('home-page');
+    const gameArea = document.getElementById('game-area');
+    const scoreBoard = document.getElementById('score-board');
+    const levelBoard = document.getElementById('level-board');
+    const goalBoard = document.getElementById('goal-board');
+    const clickSound = document.getElementById('click-sound');
+    const levelCompleteSound = document.getElementById('level-complete-sound');
+    const gameStartSound = document.getElementById('game-start-sound');
+    const celebration = document.getElementById('celebration');
+
+    const menuButton = document.getElementById('menu-button');
+    const menuDropdown = document.getElementById('menu-dropdown');
+    const retryMenuButton = document.getElementById('retry-menu-button');
+    const homeMenuButton = document.getElementById('home-menu-button');
+    const level1MenuButton = document.getElementById('level1-menu-button');
+
+    let score = 0;
+    let currentLevel = 1;
+    const goals = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+    let gameInProgress = false;
+    let dotInterval;
+    let dotsCreated = 0;
+    let maxDots = 0;
+    let levelTimeout;
+
+    // Show/hide menu dropdown
+    menuButton.addEventListener('click', () => {
+      if (menuDropdown.style.display === 'flex') {
+        menuDropdown.style.display = 'none';
+      } else {
+        menuDropdown.style.display = 'flex';
+      }
+    });
+
+    // Close menu if clicking outside
+    document.addEventListener('click', (e) => {
+      if (!menuButton.contains(e.target) && !menuDropdown.contains(e.target)) {
+        menuDropdown.style.display = 'none';
+      }
+    });
+
+    function createDot() {
+      if (!gameInProgress || dotsCreated >= maxDots) return;
+
+      const dot = document.createElement('div');
+      dot.classList.add('dot');
+      dot.style.top = `${Math.random() * (gameArea.clientHeight - 40)}px`;
+      dot.style.left = `${Math.random() * (gameArea.clientWidth - 40)}px`;
+
+      dot.addEventListener('click', (event) => {
+        if (gameInProgress) {
+          score++;
+          scoreBoard.textContent = `Score: ${score}`;
+          clickSound.play();
+          if (gameArea.contains(dot)) gameArea.removeChild(dot);
+          event.stopPropagation();
+
+          // If goal reached early, end level immediately
+          if (score >= goals[currentLevel - 1]) {
+            endLevel(true);
+          }
+        }
+      });
+
+      gameArea.appendChild(dot);
+
+      setTimeout(() => {
+        if (gameArea.contains(dot)) {
+          gameArea.removeChild(dot);
+        }
+      }, 1000); // dots last for 1 second
+
+      dotsCreated++;
+    }
+
+    function showCelebration() {
+      celebration.style.display = 'block';
+      celebration.style.animation = 'none';
+      void celebration.offsetWidth; // restart animation
+      celebration.style.animation = 'sparkleFade 3s forwards';
+
+      setTimeout(() => {
+        celebration.style.display = 'none';
+      }, 3000);
+    }
+
+    function endLevel(success) {
+      gameInProgress = false;
+      clearInterval(dotInterval);
+      clearTimeout(levelTimeout);
+      document.querySelectorAll('.dot').forEach(dot => dot.remove());
+
+      if (success) {
+        levelCompleteSound.play();
+        showCelebration();
+        nextLevelButton.style.display = 'block';
+        retryButton.style.display = 'none';
+      } else {
+        alert(`You didn't reach the goal. Final Score: ${score}.`);
+        retryButton.style.display = 'block';
+        nextLevelButton.style.display = 'none';
+      }
+    }
+
+    function startLevel(level) {
+      score = 0;
+      dotsCreated = 0;
+      currentLevel = level;
+      maxDots = goals[level - 1];
+
+      scoreBoard.textContent = `Score: ${score}`;
+      levelBoard.textContent = `Level: ${currentLevel}`;
+      goalBoard.textContent = `Goal: ${maxDots} points`;
+
+      nextLevelButton.style.display = 'none';
+      retryButton.style.display = 'none';
+
+      gameInProgress = true;
+
+      // Clear old dots if any
+      document.querySelectorAll('.dot').forEach(dot => dot.remove());
+
+      // Play start sound
+      gameStartSound.play();
+
+      // Start generating dots every 800ms (roughly)
+      dotInterval = setInterval(createDot, 800);
+
+      // Calculate time limit: goal * 750 ms + 1500 ms
+      const timeLimitMs = maxDots * 750 + 1500;
+
+      levelTimeout = setTimeout(() => {
+        if (score >= maxDots) {
+          endLevel(true);
+        } else {
+          endLevel(false);
+        }
+      }, timeLimitMs);
+    }
+
+    startButton.addEventListener('click', () => {
+      homePage.style.display = 'none';
+      gameArea.style.display = 'flex';
+      startLevel(1);
+    });
+
+    nextLevelButton.addEventListener('click', () => {
+      if (currentLevel < goals.length) {
+        startLevel(currentLevel + 1);
+      } else {
+        alert("You've completed all levels! Congratulations!");
+        gameArea.style.display = 'none';
+        homePage.style.display = 'flex';
+      }
+    });
+
+    retryButton.addEventListener('click', () => {
+      startLevel(currentLevel);
+    });
+
+    retryMenuButton.addEventListener('click', () => {
+      menuDropdown.style.display = 'none';
+      startLevel(currentLevel);
+    });
+
+    homeMenuButton.addEventListener('click', () => {
+      menuDropdown.style.display = 'none';
+      gameArea.style.display = 'none';
+      homePage.style.display = 'flex';
+      clearInterval(dotInterval);
+      clearTimeout(levelTimeout);
+      document.querySelectorAll('.dot').forEach(dot => dot.remove());
+    });
+
+    level1MenuButton.addEventListener('click', () => {
+      menuDropdown.style.display = 'none';
+      startLevel(1);
+    });
+  </script>
+</body>
+</html>
